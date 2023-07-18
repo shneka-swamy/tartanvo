@@ -45,7 +45,11 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
+    print('read args')
+
     testvo = TartanVO(args.model_name)
+
+    print('model loaded')
 
     # load trajectory data from a folder
     datastr = 'tartanair'

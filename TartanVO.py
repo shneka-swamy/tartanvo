@@ -46,7 +46,9 @@ class TartanVO(object):
         # load the whole model
         if model_name.endswith('.pkl'):
             modelname = 'models/' + model_name
+            print('loading model')
             self.load_model(self.vonet, modelname)
+            print('loaded model 2')
 
         self.vonet.cuda()
 
@@ -55,8 +57,10 @@ class TartanVO(object):
         self.flow_norm = 20 # scale factor for flow
 
     def load_model(self, model, modelname):
-        preTrainDict = torch.load(modelname)
+        preTrainDict = torch.load(modelname, map_location='cpu')
+        print('torch loaded')
         model_dict = model.state_dict()
+        print('model_dict loaded')
         preTrainDictTemp = {k:v for k,v in preTrainDict.items() if k in model_dict}
 
         if( 0 == len(preTrainDictTemp) ):
