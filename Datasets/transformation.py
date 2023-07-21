@@ -216,3 +216,12 @@ def tartan2kitti(traj):
         new_traj.append(ttt[:3,:].reshape(12))
         
     return np.array(new_traj)
+
+# This is added set of code to convert kitti to tartan
+def main():
+    traj = np.loadtxt('/tartanvo/data/KITTI_05/05.txt')
+    traj_tartan = kitti2tartan(traj)
+    np.savetxt('/tartanvo/data/KITTI_05/pose_left.txt', traj_tartan)
+
+if __name__ == '__main__':
+    main()

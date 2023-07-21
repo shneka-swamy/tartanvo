@@ -221,6 +221,8 @@ def dataset_intrinsics(dataset='tartanair'):
         focalx, focaly, centerx, centery = 458.6539916992, 457.2959899902, 367.2149963379, 248.3750000000
     elif dataset == 'tartanair':
         focalx, focaly, centerx, centery = 320.0, 320.0, 320.0, 240.0
+    elif dataset == 'android':
+        focalx, focaly, centerx, centery = 438, 438, 564/2, 423/2
     else:
         return None
     return focalx, focaly, centerx, centery
@@ -239,6 +241,7 @@ def plot_traj(gtposes, estposes, vis=False, savefigname=None, title=''):
     plt.legend(['Ground Truth','TartanVO'])
     plt.title(title)
     if savefigname is not None:
+        print('save figure to {}'.format(savefigname))
         plt.savefig(savefigname)
     if vis:
         plt.show()

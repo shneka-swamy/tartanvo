@@ -11,6 +11,8 @@ import cv2
 from os import mkdir
 from os.path import isdir
 
+from pathlib import Path
+
 def get_args():
     parser = argparse.ArgumentParser(description='HRL')
 
@@ -53,13 +55,33 @@ if __name__ == '__main__':
         datastr = 'kitti'
     elif args.euroc:
         datastr = 'euroc'
+    elif args.android:
+        datastr = 'android'
     else:
         datastr = 'tartanair'
+
     focalx, focaly, centerx, centery = dataset_intrinsics(datastr) 
     if args.kitti_intrinsics_file.endswith('.txt') and datastr=='kitti':
         focalx, focaly, centerx, centery = load_kiiti_intrinsics(args.kitti_intrinsics_file)
 
     transform = Compose([CropCenter((args.image_height, args.image_width)), DownscaleFlow(), ToTensor()])
+
+    if datastr == 'android':
+        videoname = "PXL_20230721_051431440.mp4"
+        videopath = Path("./data/ANDROID") / videoname
+        # read video and extract frames to Path("./data/ANDROID") / "frames" with file names 000000.png, 000001.png, ...
+        # also make sure len of frames less than or equal to 999999
+        extractFramePath = Path("./data/ANDROID") / "frames"
+        if not (extractFramePath / "000000.png").is_file():
+            cap = cv2.VideoCapture(str(videopath))
+            count = 0
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                cv2.imwrite(str(extractFramePath / str(count).zfill(6) + ".png"), frame)
+                count += 1
+            cap.release()
 
     testDataset = TrajFolderDataset(args.test_dir,  posefile = args.pose_file, transform=transform, 
                                         focalx=focalx, focaly=focaly, centerx=centerx, centery=centery)
@@ -79,6 +101,9 @@ if __name__ == '__main__':
             sample = testDataiter.next()
         except StopIteration:
             break
+        
+        for key in sample:
+            print(key, sample[key].shape)
 
         motions, flow = testvo.test_batch(sample)
         motionlist.extend(motions)

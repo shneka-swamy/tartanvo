@@ -13,6 +13,7 @@ class TrajFolderDataset(Dataset):
         
         files = listdir(imgfolder)
         self.rgbfiles = [(imgfolder +'/'+ ff) for ff in files if (ff.endswith('.png') or ff.endswith('.jpg'))]
+        print(len(self.rgbfiles))
         self.rgbfiles.sort()
         self.imgfolder = imgfolder
 
