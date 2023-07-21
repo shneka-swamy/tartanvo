@@ -49,11 +49,7 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
-    print('read args')
-
     testvo = TartanVO(args.model_name)
-
-    print('model loaded')
 
     # load trajectory data from a folder
     datastr = 'tartanair'
@@ -85,7 +81,7 @@ if __name__ == '__main__':
                 ret, frame = cap.read()
                 if not ret:
                     break
-                cv2.imwrite(str(extractFramePath / str(count).zfill(6) + ".png"), frame)
+                cv2.imwrite(str(extractFramePath / (str(count).zfill(6) + ".png")), frame)
                 count += 1
             cap.release()
 
@@ -108,8 +104,6 @@ if __name__ == '__main__':
         except StopIteration:
             break
         
-        for key in sample:
-            print(key, sample[key].shape)
 
         motions, flow = testvo.test_batch(sample)
         motionlist.extend(motions)
@@ -127,6 +121,7 @@ if __name__ == '__main__':
     # calculate ATE, RPE, KITTI-RPE
     if args.pose_file.endswith('.txt'):
         evaluator = TartanAirEvaluator()
+        print("calling evaluate trajectory")
         results = evaluator.evaluate_one_trajectory(args.pose_file, poselist, scale=True, kittitype=(datastr=='kitti'))
         if datastr=='euroc':
             print("==> ATE: %.4f" %(results['ate_score']))

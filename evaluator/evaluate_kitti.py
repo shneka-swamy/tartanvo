@@ -58,24 +58,24 @@ def calculate_sequence_error(poses_gt,poses_result,lengths=[10,20,30,40,50,60,70
     # for all segment lengths do
         for i in range(0,num_lengths):
             #  current length
-            length = lengths[i];
+            length = lengths[i]
 
             # compute last frame
-            last_frame = last_frame_from_segment_length(dist,first_frame,length);
+            last_frame = last_frame_from_segment_length(dist,first_frame,length)
             # continue, if sequence not long enough
             if (last_frame==-1):
-                continue;
+                continue
 
             # compute rotational and translational errors
             pose_delta_gt     = np.linalg.inv(poses_gt[first_frame]).dot(poses_gt[last_frame])
             pose_delta_result = np.linalg.inv(poses_result[first_frame]).dot(poses_result[last_frame])
             pose_error        = np.linalg.inv(pose_delta_result).dot(pose_delta_gt)
-            r_err = rotation_error(pose_error);
-            t_err = translation_error(pose_error);
+            r_err = rotation_error(pose_error)
+            t_err = translation_error(pose_error)
 
             # compute speed
-            num_frames = (float)(last_frame-first_frame+1);
-            speed = length/(0.1*num_frames);
+            num_frames = (float)(last_frame-first_frame+1)
+            speed = length/(0.1*num_frames)
 
             # write to file
             error = [first_frame,r_err/length,t_err/length,length,speed]

@@ -223,7 +223,7 @@ def dataset_intrinsics(dataset='tartanair'):
     elif dataset == 'tartanair':
         focalx, focaly, centerx, centery = 320.0, 320.0, 320.0, 240.0
     elif dataset == 'android':
-        focalx, focaly, centerx, centery = 438, 438, 564/2, 423/2
+        focalx, focaly, centerx, centery = 438 , 438, 564/2, 423/2
     else:
         return None
     return focalx, focaly, centerx, centery
@@ -235,10 +235,12 @@ def plot_traj(gtposes, estposes, vis=False, savefigname=None, title=''):
     cm = plt.cm.get_cmap('Spectral')
 
     plt.subplot(111)
-    plt.plot(gtposes[:,0],gtposes[:,1], linestyle='dashed',c='k')
-    plt.plot(estposes[:, 0], estposes[:, 1],c='#ff7f0e')
+    #plt.plot(gtposes[:,0],gtposes[:,1], linestyle='dashed',c='k')
+    plt.plot(gtposes[:,0],gtposes[:,2], linestyle='dashed',c='k')
+    plt.plot(estposes[:,0],estposes[:,2],c='#ff7f0e')
+    #plt.plot(estposes[:, 0], estposes[:, 1],c='#ff7f0e')
     plt.xlabel('x (m)')
-    plt.ylabel('y (m)')
+    plt.ylabel('z (m)')
     plt.legend(['Ground Truth','TartanVO'])
     plt.title(title)
     if savefigname is not None:
