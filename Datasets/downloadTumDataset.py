@@ -57,10 +57,10 @@ def main():
     ]
   
 
-    test = [
-        'https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz',
-        #'https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz'
-    ]
+    # test = [
+    #     'https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz',
+    #     #'https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz'
+    # ]
 
 
     # To download in parallel using multiprocessing
@@ -70,7 +70,7 @@ def main():
         downloadDatasetFunc = partial(downloadDataset, fileDir=fileDir, print_lock=print_lock)
 
         pool = Pool(processes=4)
-        pool.map(downloadDatasetFunc, test)
+        pool.map(downloadDatasetFunc, tum_url)
         pool.close()
         pool.join()
 
