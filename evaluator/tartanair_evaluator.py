@@ -23,7 +23,8 @@ class TartanAirEvaluator:
             est_traj = np.loadtxt(est_traj)
         except:
             pass
-
+        
+        print(gt_traj.shape, est_traj.shape)
         if gt_traj.shape[0] != est_traj.shape[0]:
             raise Exception("POSEFILE_LENGTH_ILLEGAL")
         if gt_traj.shape[1] != 7 or est_traj.shape[1] != 7:

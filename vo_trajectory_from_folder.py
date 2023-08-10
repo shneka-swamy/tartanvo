@@ -12,6 +12,7 @@ from os import mkdir
 from os.path import isdir
 
 from pathlib import Path
+import matplotlib
 
 def get_args():
     parser = argparse.ArgumentParser(description='HRL')
@@ -30,6 +31,8 @@ def get_args():
                         help='euroc test (default: False)')
     parser.add_argument('--kitti', action='store_true', default=False,
                         help='kitti test (default: False)')
+    parser.add_argument('--tum', action='store_true', default=False,
+                        help='tum test (default: False)')
     parser.add_argument('--android', action='store_true', default=False,
                         help='android test (default: False)')
     parser.add_argument('--kitti-intrinsics-file',  default='',
@@ -47,8 +50,9 @@ def get_args():
 
 
 if __name__ == '__main__':
-    args = get_args()
 
+    args = get_args()   
+    matplotlib.use('Agg')
     testvo = TartanVO(args.model_name)
 
     # load trajectory data from a folder
@@ -59,6 +63,8 @@ if __name__ == '__main__':
         datastr = 'euroc'
     elif args.android:
         datastr = 'android'
+    elif args.tum:
+        datastr = 'tum'
     else:
         datastr = 'tartanair'
 
