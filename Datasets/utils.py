@@ -236,18 +236,44 @@ def plot_traj(gtposes, estposes, vis=False, savefigname=None, title=''):
     fig = plt.figure(figsize=(4,4))
     cm = plt.cm.get_cmap('Spectral')
 
+    # Saved graph for x-y plane
     plt.subplot(111)
     plt.plot(gtposes[:,0],gtposes[:,1], linestyle='dashed',c='k')
-    #plt.plot(gtposes[:,0],gtposes[:,2], linestyle='dashed',c='k')
-    #plt.plot(estposes[:,0],estposes[:,2],c='#ff7f0e')
     plt.plot(estposes[:, 0], estposes[:, 1],c='#ff7f0e')
     plt.xlabel('x (m)')
     plt.ylabel('y (m)')
     plt.legend(['Ground Truth','TartanVO'])
     plt.title(title)
     if savefigname is not None:
-        print('save figure to {}'.format(savefigname))
-        plt.savefig(savefigname)
+        print('save figure to {}'.format(savefigname[:-4]+'_xy.png'))
+        plt.savefig(savefigname[:-4]+'_xy.png')
+  
+    # Save the graph for x-z plane
+    plt.clf()
+    plt.plot(gtposes[:,0],gtposes[:,2], linestyle='dashed',c='k')
+    plt.plot(estposes[:, 0], estposes[:, 2],c='#ff7f0e')
+    plt.xlabel('x (m)')
+    plt.ylabel('z (m)')
+    plt.legend(['Ground Truth','TartanVO'])
+    plt.title(title)
+    if savefigname is not None:
+        print('save figure to {}'.format(savefigname[:-4]+'_xz.png'))
+        plt.savefig(savefigname[:-4]+'_xz.png')
+    
+    # Save the graph for y-z plane
+    plt.clf()
+    plt.subplot(212)
+    plt.plot(gtposes[:,1],gtposes[:,2], linestyle='dashed',c='k')
+    plt.plot(estposes[:, 1], estposes[:, 2],c='#ff7f0e')
+    plt.xlabel('y (m)')
+    plt.ylabel('z (m)')
+    plt.legend(['Ground Truth','TartanVO'])
+    plt.title(title)
+    if savefigname is not None:
+        print('save figure to {}'.format(savefigname[:-4]+'_yz.png'))
+        plt.savefig(savefigname[:-4]+'_yz.png')
+
+
     if vis:
         plt.show()
     plt.close(fig)
