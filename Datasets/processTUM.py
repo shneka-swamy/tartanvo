@@ -1,12 +1,14 @@
 import argparse
+from pathlib import Path
+from tqdm import tqdm
+import glob
 
 def argparser():
     parser = argparse.ArgumentParser(description='TUM Dataset')
-    parser.add_argument('--groundtruth', type=str, default='/media/extra/tartanvo/data/TUM/groundtruth.txt',)
-    parser.add_argument('--rgb', type=str, default='/media/extra/tartanvo/data/TUM/rgb.txt')
+    parser.add_argument('--directory', type=Path, default='/home/pecs/tartanvo/data/TUM')
     return parser.parse_args()
 
-def chageGroundTruth(groundtruth, rgb):
+def chageGroundTruth(folder, groundtruth, rgb):
     with open(groundtruth, 'r') as f:
         lines = f.readlines()
     with open(rgb, 'r') as f:
@@ -54,20 +56,35 @@ def chageGroundTruth(groundtruth, rgb):
             continue
         changed_rgb.append(line)
     
-    assert len(changed_gt) == len(changed_rgb), "The number of groundtruth and rgb is not equal"
+    print(len(changed_gt), len(changed_rgb))
+    minimum_length = min(len(changed_gt), len(changed_rgb))
+    changed_gt = changed_gt[:minimum_length]
+    changed_rgb = changed_rgb[:minimum_length]
 
-    with open('alter_rgb.txt', 'w') as f:
+    assert len(changed_gt) == len(changed_rgb), "The length of the groundtruth and rgb should be the same"
+
+
+    with open(folder/ 'alter_rgb.txt', 'w') as f:
         for line in changed_rgb:
             f.write(line)
 
-    with open('alter_groundtruth.txt', 'w') as f:
+    with open(folder/ 'alter_groundtruth.txt', 'w') as f:
         for line in changed_gt:
             f.write(line)
 
 
 def main():
     args = argparser()
-    chageGroundTruth(args.groundtruth, args.rgb)
+    directory = args.directory
+
+    # Go through all the folders in the directory
+    for folder in tqdm(directory.glob('*')):
+        print("Processing: ", folder)
+        # Get the groundtruth and rgb file
+        groundtruth = folder / 'groundtruth.txt'
+        rgb = folder / 'rgb.txt'
+        # Change the groundtruth
+        chageGroundTruth(folder, groundtruth, rgb)
 
 if __name__ == '__main__':
     main()

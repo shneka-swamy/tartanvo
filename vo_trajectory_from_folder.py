@@ -98,7 +98,8 @@ if __name__ == '__main__':
     testDataiter = iter(testDataloader)
 
     motionlist = []
-    testname = datastr + '_' + args.model_name.split('.')[0]
+    testname = datastr + '_' + args.model_name.split('.')[0] + '_' + args.test_dir.split('/')[-2]
+    print("TestName: ", testname)
     if args.save_flow:
         flowdir = 'results/'+testname+'_flow'
         if not isdir(flowdir):
