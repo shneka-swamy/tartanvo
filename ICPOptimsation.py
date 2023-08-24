@@ -30,15 +30,16 @@ def best_fit_transform(A, B):
     H = np.dot(AA.T, BB)
     U, S, Vt = np.linalg.svd(H)
     R = np.dot(Vt.T, U.T)
+    
 
     # special reflection case
     if np.linalg.det(R) < 0:
+       print('Reflection detected')
        Vt[m-1,:] *= -1
        R = np.dot(Vt.T, U.T)
 
     # translation
     t = centroid_B.T - np.dot(R,centroid_A.T)
-
     # homogeneous transformation
     T = np.identity(m+1)
     T[:m, :m] = R

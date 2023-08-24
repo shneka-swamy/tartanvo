@@ -31,8 +31,12 @@ def get_args():
                         help='euroc test (default: False)')
     parser.add_argument('--kitti', action='store_true', default=False,
                         help='kitti test (default: False)')
-    parser.add_argument('--tum', action='store_true', default=False,
-                        help='tum test (default: False)')
+    parser.add_argument('--tum1', action='store_true', default=False,
+                        help='freiburg1 tum test (default: False)')
+    parser.add_argument('--tum2', action='store_true', default=False,
+                    help='freiburg2 tum test (default: False)')
+    parser.add_argument('--tum3', action='store_true', default=False,
+                    help='freiburg3 tum test (default: False)')
     parser.add_argument('--android', action='store_true', default=False,
                         help='android test (default: False)')
     parser.add_argument('--kitti-intrinsics-file',  default='',
@@ -63,8 +67,12 @@ if __name__ == '__main__':
         datastr = 'euroc'
     elif args.android:
         datastr = 'android'
-    elif args.tum:
-        datastr = 'tum'
+    elif args.tum1:
+        datastr = 'tum1'
+    elif args.tum2:
+        datastr = 'tum2'
+    elif args.tum3:
+        datastr = 'tum3'
     else:
         datastr = 'tartanair'
 

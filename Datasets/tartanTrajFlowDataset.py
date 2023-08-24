@@ -60,6 +60,7 @@ class TrajFolderDataset(Dataset):
         if self.motions is None:
             return res
         else:
+            assert idx < len(self.motions), f"Index out of range"
             res['motion'] = self.motions[idx]
             return res
 

@@ -224,8 +224,12 @@ def dataset_intrinsics(dataset='tartanair'):
         focalx, focaly, centerx, centery = 320.0, 320.0, 320.0, 240.0
     elif dataset == 'android':
         focalx, focaly, centerx, centery = 438 , 438, 564/2, 423/2
-    elif dataset == 'tum':
+    elif dataset == 'tum1':
         focalx, focaly, centerx, centery = 517.3, 516.5, 318.6, 255.3
+    elif dataset == 'tum2':
+        focalx, focaly, centerx, centery = 520.9, 521.0, 325.1, 249.7
+    elif dataset == 'tum3':
+        focalx, focaly, centerx, centery = 535.4, 539.2, 320.1, 247.6
     else:
         return None
     return focalx, focaly, centerx, centery
@@ -262,7 +266,6 @@ def plot_traj(gtposes, estposes, vis=False, savefigname=None, title=''):
     
     # Save the graph for y-z plane
     plt.clf()
-    plt.subplot(212)
     plt.plot(gtposes[:,1],gtposes[:,2], linestyle='dashed',c='k')
     plt.plot(estposes[:, 1], estposes[:, 2],c='#ff7f0e')
     plt.xlabel('y (m)')

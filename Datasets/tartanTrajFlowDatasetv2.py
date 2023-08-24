@@ -20,10 +20,7 @@ class TrajFolderDatasetv2(Dataset):
 
         print('Find {} image files in {}'.format(len(self.rgbfiles), imgfolder))
 
-        if predPoseFile is not None and predPoseFile!="":
-            self.matrix, self.motions = self.poseToMotion(predPoseFile)
-        else:
-            self.motions = None
+        self.poses = self.poseToMotion(predPoseFile)
     
         self.N = len(self.rgbfiles) - 1
 
@@ -31,11 +28,7 @@ class TrajFolderDatasetv2(Dataset):
         poselist = np.loadtxt(posefile).astype(np.float32)
         assert(poselist.shape[1]==7) # position + quaternion
         poses = pos_quats2SEs(poselist)
-        matrix = pose2motion(poses)
-        motions     = SEs2ses(matrix).astype(np.float32)
-        # self.motions = self.motions / self.pose_std
-        assert(len(motions) == len(self.rgbfiles)) - 1
-        return matrix, motions
+        return poses
 
     def __len__(self):
         return self.N
@@ -43,11 +36,12 @@ class TrajFolderDatasetv2(Dataset):
     def __getitem__(self, idx):
         imgfile1 = self.rgbfiles[idx].strip()
         imgfile2 = self.rgbfiles[idx+1].strip()
-        img1 = cv2.imread(imgfile1)
-        img2 = cv2.imread(imgfile2)
-
+        img1 = cv2.imread(imgfile1, cv2.IMREAD_GRAYSCALE)
+        img2 = cv2.imread(imgfile2, cv2.IMREAD_GRAYSCALE)
+      
         res = {'img1': img1, 'img2': img2 }
-        res = {'PredMat1': self.matrix[idx], 'PredMat2': self.matrix[idx+1]}
+        res['PredMat1'] = self.poses[idx]
+        res['PredMat2'] = self.poses[idx+1]
 
         return res
 
