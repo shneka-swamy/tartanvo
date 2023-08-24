@@ -8,13 +8,15 @@ from scipy.spatial.transform import Rotation as R
 
 import ICPOptimsation as icp
 
-from Datasets.transformation import so2quat
+from evaluator.tartanair_evaluator import TartanAirEvaluator
+from Datasets.transformation import so2quat, pos_quat2SE
 from Datasets.tartanTrajFlowDatasetv2 import TrajFolderDatasetv2
-from Datasets.utils import dataset_intrinsics
+from Datasets.utils import dataset_intrinsics, plot_traj
 import matplotlib
 import torch
 import math
 
+from tqdm import tqdm
 def get_args():
     parser = argparse.ArgumentParser(description='HRL')
 
@@ -30,6 +32,12 @@ def get_args():
                         help='path to the ground truth pose file')
     parser.add_argument('--pred_pose', default='',
                         help='path to the predicted pose file')
+    parser.add_argument('--model-name', default='',
+                        help='name of pretrained model (default: "")')
+    parser.add_argument('--no-decompose', action='store_true', default=False,
+                        help='do not decompose the homography matrix (default: False)')
+    parser.add_argument('--from_gt', action='store_true', default=False,
+                        help='use the ground truth pose as the initial value (default: False)')
     args = parser.parse_args()
 
     return args
@@ -65,7 +73,7 @@ def transform_pose(img1, img2, pose1, pose2, intrinsic_matrix):
     points1 = get_points_from_keypoints(kp1)
     points2 = get_points_from_keypoints(kp2)
     
-    if points1.shape[0] < 100 or points2.shape[0] < 100:
+    if points1.shape[0] < 200 or points2.shape[0] < 200:
         return homography_initial_guess
     else:
         min_points = min(points1.shape[0], points2.shape[0])
@@ -93,7 +101,8 @@ def detect_quartenion(rvec, tvec, pose1, pose2):
         rotation2_pred = pose1.reshape(3, 4)
         rotation2_pred = np.vstack((rotation2_pred, np.array([0, 0, 0, 1])))
 
-        change = np.linalg.norm(rotation2 - rotation2_pred, ord=2) 
+        # Considering only translation
+        change = np.linalg.norm(rotation2[:3, 3] - rotation2_pred[:3, 3], ord=2) 
         if change < lowest_change:
             lowest_change = change
             required_rotation = R.from_matrix(rotation2[:3, :3]).as_quat()
@@ -111,6 +120,7 @@ def data_loader(arg):
     elif arg.tum3:
         datastr = 'tum3'
 
+    poselist = []
     focalx, focaly, centerx, centery = dataset_intrinsics(datastr)
 
     intrinsic_matrix = np.array([[focalx, 0.0, centerx, 0.0],
@@ -125,21 +135,78 @@ def data_loader(arg):
     reproject_loader = torch.utils.data.DataLoader(reproject_dataset, batch_size=1, shuffle=False, num_workers=1)
     
     reprojectIter = iter(reproject_loader) 
-    while True:
-        try:
-            res = next(reprojectIter)
-            # Convert torch tensor to numpy array
-            img1 = res['img1'].numpy()
-            img1 = np.squeeze(img1, axis=0)
-            img2 = res['img2'].numpy()
-            img2 = np.squeeze(img2, axis=0)
-            transformed_value = transform_pose(img2, img1, res['PredMat2'], res['PredMat1'], intrinsic_matrix)
-            _, rvec, tvec, _ = cv2.decomposeHomographyMat(transformed_value, intrinsic_matrix[:3, :3])
+    flag = True
+    if arg.from_gt:
+        with open(arg.gt_pose, 'r') as f:
+            pose = f.readline().split()
+            pose = np.array([float(p) for p in pose])
+            poselist.append(pose)
+
+
+    with tqdm(total=len(reproject_loader)) as pbar: 
+        while True:
+            try:
+                res = next(reprojectIter)
+
+                if arg.from_gt and flag:
+                    res['PredMat1'] = torch.tensor(pos_quat2SE(poselist[0]))
+                    flag = False
+
+                # Convert torch tensor to numpy array
+                if flag:
+                    pose_matrix = res['PredMat1'].numpy().reshape(3, 4)
+                    rotation_quat = R.from_matrix(pose_matrix[:3, :3]).as_quat()
+                    translation = pose_matrix[:3, 3]
+                    pose = np.concatenate((translation, rotation_quat))
+                    poselist.append(pose)
+                    flag = False
+                
+
+                img1 = res['img1'].numpy()
+                img1 = np.squeeze(img1, axis=0)
+                img2 = res['img2'].numpy()
+                img2 = np.squeeze(img2, axis=0)
+                transformed_value = transform_pose(img2, img1, res['PredMat2'], res['PredMat1'], intrinsic_matrix)
+                
+                if arg.no_decompose:
+                    rotation1 = res['PredMat1'].numpy().reshape(3, 4)
+                    rotation2 = np.linalg.inv(intrinsic_matrix[:3, :3]) @ transformed_value @ intrinsic_matrix[:3, :3] @ rotation1
+                    required_rotation = R.from_matrix(rotation2[:3, :3]).as_quat()
+                    required_translation = rotation2[:3, 3]
+                    pose = np.concatenate((required_translation, required_rotation))
+                    poselist.append(pose)
+
+                else:
+                    _, rvec, tvec, _ = cv2.decomposeHomographyMat(transformed_value, intrinsic_matrix[:3, :3])
+                    
+                    required_rotation, required_translation = detect_quartenion(rvec, tvec, res['PredMat2'], res['PredMat1'])
+                    pose = np.concatenate((required_translation, required_rotation))
+                    poselist.append(pose)
             
-            required_rotation, required_translation = detect_quartenion(rvec, tvec, res['PredMat2'], res['PredMat1'])
-            print(f"Required rotation: {required_rotation}, Required translation: {required_translation}")
-        except StopIteration:
-            break
+            except StopIteration:
+                break
+            pbar.update(1)
+        
+    print("Shape of the pose list: ", np.array(poselist).shape)
+
+    testname = datastr + '_' + arg.model_name.split('.')[0] + '_' + arg.test_dir.split('/')[-2] + '_reproj'
+    # calculate ATE, RPE, KITTI-RPE
+    if arg.gt_pose.endswith('.txt'):
+        evaluator = TartanAirEvaluator()
+        print("calling evaluate trajectory")
+        results = evaluator.evaluate_one_trajectory(arg.gt_pose, np.array(poselist), scale=True, kittitype=(datastr=='kitti'))
+        if datastr=='euroc':
+            print("==> ATE: %.4f" %(results['ate_score']))
+        else:
+            print("==> ATE: %.4f,\t KITTI-R/t: %.4f, %.4f" %(results['ate_score'], results['kitti_score'][0], results['kitti_score'][1]))
+
+        # save results and visualization
+        plot_traj(results['gt_aligned'], results['est_aligned'], vis=False, savefigname='results/'+testname+'.png', title='ATE %.4f' %(results['ate_score']))
+        np.savetxt('results/'+testname+'.txt',results['est_aligned'])
+    else:
+        np.savetxt('results/'+testname+'.txt',np.array(poselist))
+
+
 
 def main(arg):
     data_loader(arg)
