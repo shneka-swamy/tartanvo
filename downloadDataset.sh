@@ -41,7 +41,7 @@ do
         fi
     fi
 
-    tar -xvf $i
+    #tar -xvf $i
 done
 
 popd
