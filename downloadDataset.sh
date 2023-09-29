@@ -32,7 +32,7 @@ do
         echo "Downloading $i.md5 again"
         wget $url.md5 > /dev/null 2>&1
         echo "Downloading $i"
-        wget $url > /dev/null 2>&1
+        wget $url
         md5sum -c $i.md5
         # if checksum still fails, exit
         if [ $? -ne 0 ]; then
