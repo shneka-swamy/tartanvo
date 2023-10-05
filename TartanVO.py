@@ -56,6 +56,18 @@ class TartanVO(object):
         self.pose_std = np.array([ 0.13,  0.13,  0.13,  0.013 ,  0.013,  0.013], dtype=np.float32) # the output scale factor
         self.flow_norm = 20 # scale factor for flow
 
+    def jit_model(self, inputTensors):
+        self.vonet.eval()
+        # self.vonet.cpu()
+        print(f"input type {type(inputTensors)} and dims {inputTensors[0].shape}, {inputTensors[1].shape}, {inputTensors[2].shape}")
+        return torch.jit.trace(self.vonet, inputTensors)
+
+    def onnx_model(self, inputTensors):
+        self.vonet.eval()
+        #self.vonet.cpu()
+        print(f"input type {type(inputTensors)} and dims {inputTensors[0].shape}, {inputTensors[1].shape}, {inputTensors[2].shape}")
+        return torch.onnx.export(self.vonet, inputTensors, "model.onnx", verbose=True)
+
     def load_model(self, model, modelname):
         preTrainDict = torch.load(modelname, map_location='cpu')
         print('torch loaded')

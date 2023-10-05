@@ -37,6 +37,8 @@ def get_args():
                     help='freiburg2 tum test (default: False)')
     parser.add_argument('--tum3', action='store_true', default=False,
                     help='freiburg3 tum test (default: False)')
+    parser.add_argument('--tumvi', action='store_true', default=False,
+                    help='vi tum test (default: False)')
     parser.add_argument('--android', action='store_true', default=False,
                         help='android test (default: False)')
     parser.add_argument('--kitti-intrinsics-file',  default='',
@@ -73,6 +75,8 @@ if __name__ == '__main__':
         datastr = 'tum2'
     elif args.tum3:
         datastr = 'tum3'
+    elif args.tumvi:
+        datastr = 'tumvi'
     else:
         datastr = 'tartanair'
 
@@ -121,6 +125,7 @@ if __name__ == '__main__':
         
 
         motions, flow = testvo.test_batch(sample)
+
         motionlist.extend(motions)
 
         if args.save_flow:

@@ -5,3 +5,4 @@ ipython
 opencv-python
 cupy==10.2.0
 torch==1.13.1
+torchvision==0.14.1

@@ -163,9 +163,9 @@ class PWCDCNet(nn.Module):
         return output*mask
 
 
-    def forward(self,x):
-        im1 = x[0]
-        im2 = x[1]
+    def forward(self,im1, im2):
+        # im1 = x[0]
+        # im2 = x[1]
         
         c11 = self.conv1b(self.conv1aa(self.conv1a(im1)))
         c21 = self.conv1b(self.conv1aa(self.conv1a(im2)))
