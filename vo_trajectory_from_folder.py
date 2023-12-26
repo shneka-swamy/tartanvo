@@ -13,6 +13,9 @@ from os.path import isdir
 
 from pathlib import Path
 import matplotlib
+from tqdm import tqdm
+
+import csv
 
 def get_args():
     parser = argparse.ArgumentParser(description='HRL')
@@ -49,6 +52,11 @@ def get_args():
                         help='test trajectory gt pose file, used for scale calculation, and visualization (default: "")')
     parser.add_argument('--save-flow', action='store_true', default=False,
                         help='save optical flow (default: False)')
+    parser.add_argument('--quiet', action='store_true', default=False, help='do not print anything (default: False)')
+    parser.add_argument('--csv-file', default='', type=Path,
+                        help='csv file to save the results (default: "")')
+    parser.add_argument('--clahe', action='store_true', default=False,
+                        help='use clahe (default: False)')
 
     args = parser.parse_args()
 
@@ -80,6 +88,8 @@ if __name__ == '__main__':
     else:
         datastr = 'tartanair'
 
+    print("Clahe is set to: ", args.clahe)
+
     focalx, focaly, centerx, centery = dataset_intrinsics(datastr) 
     if args.kitti_intrinsics_file.endswith('.txt') and datastr=='kitti':
         focalx, focaly, centerx, centery = load_kiiti_intrinsics(args.kitti_intrinsics_file)
@@ -104,52 +114,71 @@ if __name__ == '__main__':
             cap.release()
 
     testDataset = TrajFolderDataset(args.test_dir,  posefile = args.pose_file, transform=transform, 
-                                        focalx=focalx, focaly=focaly, centerx=centerx, centery=centery)
+                                        focalx=focalx, focaly=focaly, centerx=centerx, centery=centery, clahe=args.clahe)
     testDataloader = DataLoader(testDataset, batch_size=args.batch_size, 
                                         shuffle=False, num_workers=args.worker_num)
     testDataiter = iter(testDataloader)
 
+    testDatasetName = args.test_dir.split('/')[-4]
+
     motionlist = []
-    testname = datastr + '_' + args.model_name.split('.')[0] + '_' + args.test_dir.split('/')[-2]
-    print("TestName: ", testname)
+    # testname = datastr + '_' + args.model_name.split('.')[0] + '_' + args.test_dir.split('/')[-2]
+    # print("TestName: ", testname)
     if args.save_flow:
-        flowdir = 'results/'+testname+'_flow'
+        flowdir = 'results/'+testDatasetName+'_flow'
         if not isdir(flowdir):
             mkdir(flowdir)
         flowcount = 0
-    while True:
-        try:
-            sample = next(testDataiter)
-        except StopIteration:
-            break
-        
+    with tqdm(total=len(testDataloader), desc=f"{testDatasetName}") as pbar:
+        while True:
+            try:
+                sample = next(testDataiter)
+            except StopIteration:
+                break
+    
+            motions, flow = testvo.test_batch(sample, args.quiet)
 
-        motions, flow = testvo.test_batch(sample)
+            motionlist.extend(motions)
 
-        motionlist.extend(motions)
+            if args.save_flow:
+                for k in range(flow.shape[0]):
+                    flowk = flow[k].transpose(1,2,0)
+                    np.save(flowdir+'/'+str(flowcount).zfill(6)+'.npy',flowk)
+                    flow_vis = visflow(flowk)
+                    cv2.imwrite(flowdir+'/'+str(flowcount).zfill(6)+'.png',flow_vis)
+                    flowcount += 1
 
-        if args.save_flow:
-            for k in range(flow.shape[0]):
-                flowk = flow[k].transpose(1,2,0)
-                np.save(flowdir+'/'+str(flowcount).zfill(6)+'.npy',flowk)
-                flow_vis = visflow(flowk)
-                cv2.imwrite(flowdir+'/'+str(flowcount).zfill(6)+'.png',flow_vis)
-                flowcount += 1
+            pbar.update(1)
 
     poselist = ses2poses_quat(np.array(motionlist))
 
     # calculate ATE, RPE, KITTI-RPE
     if args.pose_file.endswith('.txt'):
         evaluator = TartanAirEvaluator()
-        print("calling evaluate trajectory")
+        if not args.quiet:
+            print("calling evaluate trajectory")
         results = evaluator.evaluate_one_trajectory(args.pose_file, poselist, scale=True, kittitype=(datastr=='kitti'))
         if datastr=='euroc':
+            csvRow = [testDatasetName, results['ate_score']]
             print("==> ATE: %.4f" %(results['ate_score']))
         else:
+            csvRow = [testDatasetName, results['ate_score'], results['kitti_score'][0], results['kitti_score'][1]]
             print("==> ATE: %.4f,\t KITTI-R/t: %.4f, %.4f" %(results['ate_score'], results['kitti_score'][0], results['kitti_score'][1]))
 
+        if args.csv_file:
+            with open(args.csv_file, 'a') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(csvRow)
+
         # save results and visualization
-        plot_traj(results['gt_aligned'], results['est_aligned'], vis=False, savefigname='results/'+testname+'.png', title='ATE %.4f' %(results['ate_score']))
-        np.savetxt('results/'+testname+'.txt',results['est_aligned'])
+        if args.clahe:
+            plot_traj(results['gt_aligned'], results['est_aligned'], vis=False, savefigname='results_clahe/'+testDatasetName+'.png', title='ATE %.4f' %(results['ate_score']))
+            np.savetxt('results_clahe/'+testDatasetName+'.txt',results['est_aligned'])
+        else:       
+            plot_traj(results['gt_aligned'], results['est_aligned'], vis=False, savefigname='results_given/'+testDatasetName+'.png', title='ATE %.4f' %(results['ate_score']))
+            np.savetxt('results_given/'+testDatasetName+'.txt',results['est_aligned'])
     else:
-        np.savetxt('results/'+testname+'.txt',poselist)
+        if args.clahe:
+            np.savetxt('results_clahe/'+testDatasetName+'.txt',poselist)
+        else:
+            np.savetxt('results_given/'+testDatasetName+'.txt',poselist)

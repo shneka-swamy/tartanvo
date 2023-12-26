@@ -26,6 +26,8 @@ def get_args():
                     help='tum test (default: False)')
     parser.add_argument('--tum3', action='store_true', default=False,
                     help='tum test (default: False)')
+    parser.add_argument('--tumvi', action='store_true', default=False,
+                    help='tum test (default: False)')
     parser.add_argument('--test-dir', default='',
                         help='test trajectory folder where the RGB images are (default: "")')
     parser.add_argument('--gt_pose', default='',
@@ -119,6 +121,8 @@ def data_loader(arg):
         datastr = 'tum2'
     elif arg.tum3:
         datastr = 'tum3'
+    elif arg.tumvi:
+        datastr = 'tumvi'
 
     poselist = []
     focalx, focaly, centerx, centery = dataset_intrinsics(datastr)

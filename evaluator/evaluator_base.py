@@ -11,7 +11,7 @@ def transform_trajs(gt_traj, est_traj, cal_scale):
     gt_traj, est_traj = trajectory_transform(gt_traj, est_traj)
     if cal_scale :
         est_traj, s = rescale(gt_traj, est_traj)
-        print('  Scale, {}'.format(s))
+        # print('  Scale, {}'.format(s))
     else:
         s = 1.0
     return gt_traj, est_traj, s
@@ -33,7 +33,7 @@ class ATEEvaluator(object):
         est_xyz = np.matrix(est_traj[:, 0:3].transpose())
 
         rot, trans, trans_error, s = align(gt_xyz, est_xyz, scale)
-        print('  ATE scale: {}'.format(s))
+        #print('  ATE scale: {}'.format(s))
         error = np.sqrt(np.dot(trans_error,trans_error) / len(trans_error))
 
         # align two trajs 

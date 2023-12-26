@@ -62,7 +62,7 @@ def align(model,data,calc_scale=False):
     numpy.set_printoptions(precision=3,suppress=True)
     model_zerocentered = model - model.mean(1)
     data_zerocentered = data - data.mean(1)
-    
+
     W = numpy.zeros( (3,3) )
     for column in range(model.shape[1]):
         W += numpy.outer(model_zerocentered[:,column],data_zerocentered[:,column])
@@ -80,7 +80,13 @@ def align(model,data,calc_scale=False):
             dots += numpy.dot(data_zerocentered[:,column].transpose(),rotmodel[:,column])
             normi = numpy.linalg.norm(model_zerocentered[:,column])
             norms += normi*normi
-        # s = float(dots/norms)  
+        # s = float(dots/norms)
+
+        # if dots == 0:
+        #     print("Dots = 0")
+        #     print(data_zerocentered)
+        #     exit()
+
         s = float(norms/dots)
     else:
         s = 1.0  

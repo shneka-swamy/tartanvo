@@ -4,5 +4,10 @@ matplotlib
 ipython
 opencv-python
 cupy==10.2.0
-torch==1.13.1
-torchvision==0.14.1
+# torch==1.13.1
+# torchvision==0.14.1
+# Changed this requirement for running with ORB-SLAM3
+torch==2.0.0
+torchvision
+torchaudio
+

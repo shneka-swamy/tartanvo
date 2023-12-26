@@ -24,7 +24,7 @@ class TartanAirEvaluator:
         except:
             pass
         
-        print(gt_traj.shape, est_traj.shape)
+        # print(gt_traj.shape, est_traj.shape)
         if gt_traj.shape[0] != est_traj.shape[0]:
             raise Exception("POSEFILE_LENGTH_ILLEGAL")
         if gt_traj.shape[1] != 7 or est_traj.shape[1] != 7:
@@ -38,11 +38,13 @@ class TartanAirEvaluator:
         rpe_score = self.rpe_eval.evaluate(gt_SEs, est_SEs)
         kitti_score = self.kitti_eval.evaluate(gt_SEs, est_SEs, kittitype=kittitype)
 
+        # Added scale for reference for our code
         return {'ate_score': ate_score, 
                 'rpe_score': rpe_score, 
                 'kitti_score': kitti_score,
                 'gt_aligned': gt_ate_aligned, 
-                'est_aligned': est_ate_aligned}
+                'est_aligned': est_ate_aligned,
+                'scale': s}
 
 if __name__ == "__main__":
     

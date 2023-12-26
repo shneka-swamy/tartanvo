@@ -38,6 +38,7 @@ np.set_printoptions(precision=4, suppress=True, threshold=10000)
 
 from Network.VONet import VONet
 
+
 class TartanVO(object):
     def __init__(self, model_name):
         # import ipdb;ipdb.set_trace()
@@ -46,9 +47,9 @@ class TartanVO(object):
         # load the whole model
         if model_name.endswith('.pkl'):
             modelname = 'models/' + model_name
-            print('loading model')
+            # print('loading model')
             self.load_model(self.vonet, modelname)
-            print('loaded model 2')
+            # print('loaded model 2')
 
         self.vonet.cuda()
 
@@ -59,24 +60,24 @@ class TartanVO(object):
     def jit_model(self, inputTensors):
         self.vonet.eval()
         # self.vonet.cpu()
-        print(f"input type {type(inputTensors)} and dims {inputTensors[0].shape}, {inputTensors[1].shape}, {inputTensors[2].shape}")
+        # print(f"input type {type(inputTensors)} and dims {inputTensors[0].shape}, {inputTensors[1].shape}, {inputTensors[2].shape}")
         return torch.jit.trace(self.vonet, inputTensors)
 
     def onnx_model(self, inputTensors):
         self.vonet.eval()
         #self.vonet.cpu()
-        print(f"input type {type(inputTensors)} and dims {inputTensors[0].shape}, {inputTensors[1].shape}, {inputTensors[2].shape}")
+        # print(f"input type {type(inputTensors)} and dims {inputTensors[0].shape}, {inputTensors[1].shape}, {inputTensors[2].shape}")
         return torch.onnx.export(self.vonet, inputTensors, "model.onnx", verbose=True)
 
     def load_model(self, model, modelname):
         preTrainDict = torch.load(modelname, map_location='cpu')
-        print('torch loaded')
+        # print('torch loaded')
         model_dict = model.state_dict()
-        print('model_dict loaded')
+        # print('model_dict loaded')
         preTrainDictTemp = {k:v for k,v in preTrainDict.items() if k in model_dict}
 
         if( 0 == len(preTrainDictTemp) ):
-            print("Does not find any module to load. Try DataParallel version.")
+            # print("Does not find any module to load. Try DataParallel version.")
             for k, v in preTrainDict.items():
                 kk = k[7:]
                 if ( kk in model_dict ):
@@ -87,10 +88,10 @@ class TartanVO(object):
 
         model_dict.update(preTrainDictTemp)
         model.load_state_dict(model_dict)
-        print('Model loaded...')
+        # print('Model loaded...')
         return model
 
-    def test_batch(self, sample):
+    def test_batch(self, sample, quiet=False):
         self.test_count += 1
         
         # import ipdb;ipdb.set_trace()
@@ -118,9 +119,10 @@ class TartanVO(object):
             trans_est = posenp[:,:3]
             trans_est = trans_est/np.linalg.norm(trans_est,axis=1).reshape(-1,1)*scale.reshape(-1,1)
             posenp[:,:3] = trans_est 
-        else:
+        elif not quiet:
             print('    scale is not given, using 1 as the default scale value..')
 
-        print("{} Pose inference using {}s: \n{}".format(self.test_count, inferencetime, posenp))
+        if not quiet:
+            print("{} Pose inference using {}s: \n{}".format(self.test_count, inferencetime, posenp))
         return posenp, flownp
 
