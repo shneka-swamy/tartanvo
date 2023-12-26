@@ -3,3 +3,6 @@ models/
 data/
 results/
 cmake-build-*/
+Datasets/pinhole-equi-512/
+results_clahe/
+results_given/
