@@ -5,7 +5,7 @@ from Datasets.transformation import ses2poses_quat
 from evaluator.tartanair_evaluator import TartanAirEvaluator
 from TartanVO import TartanVO
 
-import argparse
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy as np
 import cv2
 from os import mkdir
@@ -18,7 +18,7 @@ from tqdm import tqdm
 import csv
 
 def get_args():
-    parser = argparse.ArgumentParser(description='HRL')
+    parser = ArgumentParser(description='HRL', formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--batch-size', type=int, default=1,
                         help='batch size (default: 1)')
@@ -34,6 +34,8 @@ def get_args():
                         help='euroc test (default: False)')
     parser.add_argument('--kitti', action='store_true', default=False,
                         help='kitti test (default: False)')
+    parser.add_argument('--sense', action='store_true', default=False,
+                        help='sense time dataset (default: False)')
     parser.add_argument('--tum1', action='store_true', default=False,
                         help='freiburg1 tum test (default: False)')
     parser.add_argument('--tum2', action='store_true', default=False,
@@ -53,8 +55,12 @@ def get_args():
     parser.add_argument('--save-flow', action='store_true', default=False,
                         help='save optical flow (default: False)')
     parser.add_argument('--quiet', action='store_true', default=False, help='do not print anything (default: False)')
-    parser.add_argument('--csv-file', default='', type=Path,
+    parser.add_argument('--csv-file', default='./results_tartan', type=Path,
                         help='csv file to save the results (default: "")')
+    parser.add_argument('--poses-file', default='poses.txt', type=Path,
+                        help='file to save the estimated poses (default: "poses.txt")')
+    parser.add_argument('--relative-file', default='relative.txt', type=Path,
+                        help='file to save the relative poses (default: "relative.txt")')
     parser.add_argument('--clahe', action='store_true', default=False,
                         help='use clahe (default: False)')
 
@@ -121,6 +127,7 @@ if __name__ == '__main__':
 
     testDatasetName = args.test_dir.split('/')[-4]
 
+    timelist = []
     motionlist = []
     # testname = datastr + '_' + args.model_name.split('.')[0] + '_' + args.test_dir.split('/')[-2]
     # print("TestName: ", testname)
@@ -132,12 +139,22 @@ if __name__ == '__main__':
     with tqdm(total=len(testDataloader), desc=f"{testDatasetName}") as pbar:
         while True:
             try:
-                sample = next(testDataiter)
+                sample, timestamp, debugDict = next(testDataiter)
             except StopIteration:
                 break
     
+            # cv2.imshow('img1 python', sample['img1'].numpy().squeeze().transpose(1,2,0))
+            # cv2.imshow('img2 python', sample['img2'].numpy().squeeze().transpose(1,2,0))
             motions, flow = testvo.test_batch(sample, args.quiet)
+            
+            print("Motions are", type(motions), motions.shape, motions.dtype)
+            print(motions) #, debugDict['imgpath1'], debugDict['imgpath2'])
+            # cv2.waitKey(0)
 
+            # if pbar.n > 10:
+            #     exit(1)
+
+            timelist.extend(timestamp)
             motionlist.extend(motions)
 
             if args.save_flow:
@@ -147,10 +164,16 @@ if __name__ == '__main__':
                     flow_vis = visflow(flowk)
                     cv2.imwrite(flowdir+'/'+str(flowcount).zfill(6)+'.png',flow_vis)
                     flowcount += 1
-
             pbar.update(1)
 
+    assert len(timelist) == len(motionlist), f"timelist: {len(timelist)}, motionlist: {len(motionlist)}"
+    with open(args.relative_file, 'w') as f:
+        for i in range(len(motionlist)):
+            f.write(str(timelist[i])+' '+' '.join([str(x) for x in motionlist[i]])+'\n')
+
     poselist = ses2poses_quat(np.array(motionlist))
+
+    print(poselist[:11])
 
     # calculate ATE, RPE, KITTI-RPE
     if args.pose_file.endswith('.txt'):
@@ -161,6 +184,7 @@ if __name__ == '__main__':
         if datastr=='euroc':
             csvRow = [testDatasetName, results['ate_score']]
             print("==> ATE: %.4f" %(results['ate_score']))
+            print("==> RPE: %.4f" %(results['scale']))
         else:
             csvRow = [testDatasetName, results['ate_score'], results['kitti_score'][0], results['kitti_score'][1]]
             print("==> ATE: %.4f,\t KITTI-R/t: %.4f, %.4f" %(results['ate_score'], results['kitti_score'][0], results['kitti_score'][1]))
@@ -169,6 +193,13 @@ if __name__ == '__main__':
             with open(args.csv_file, 'a') as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow(csvRow)
+
+        if args.poses_file:
+            timelist = [0] + timelist
+            assert len(timelist) == len(poselist), f"timelist: {len(timelist)}, poselist: {len(poselist)}"
+            with open(args.poses_file, 'w') as f:
+                for i in range(len(poselist)):
+                    f.write(str(timelist[i])+' '+' '.join([str(x) for x in poselist[i]])+'\n')
 
         # save results and visualization
         if args.clahe:

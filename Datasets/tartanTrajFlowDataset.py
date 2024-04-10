@@ -50,6 +50,9 @@ class TrajFolderDataset(Dataset):
     def __getitem__(self, idx):
         imgfile1 = self.rgbfiles[idx].strip()
         imgfile2 = self.rgbfiles[idx+1].strip()
+
+        timestamp = imgfile2.split('/')[-1].split('.')[0]
+
         img1 = cv2.imread(imgfile1)
         img2 = cv2.imread(imgfile2)
 
@@ -64,7 +67,7 @@ class TrajFolderDataset(Dataset):
 
             img1 = cv2.cvtColor(img1_lab, cv2.COLOR_LAB2RGB)
             img2 = cv2.cvtColor(img2_lab, cv2.COLOR_LAB2RGB)
-        res = {'img1': img1, 'img2': img2 }
+        res = {'img1': img1, 'img2': img2}
 
         h, w, _ = img1.shape
         intrinsicLayer = make_intrinsics_layer(w, h, self.focalx, self.focaly, self.centerx, self.centery)
@@ -73,11 +76,14 @@ class TrajFolderDataset(Dataset):
         if self.transform:
             res = self.transform(res)
 
+        debugDict = {'imgpath1': imgfile1, 'imgpath2': imgfile2}
+
         if self.motions is None:
-            return res
+            return res, timestamp, debugDict
         else:
             assert idx < len(self.motions), f"Index {idx} out of range > {len(self.motions)}"
+            print("Motion is", self.motions[idx])
             res['motion'] = self.motions[idx]
-            return res
+            return res, timestamp, debugDict
 
 
